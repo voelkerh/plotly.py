@@ -10,7 +10,7 @@ sch = optional_imports.get_module("scipy.cluster.hierarchy")
 scs = optional_imports.get_module("scipy.spatial")
 
 
-def create_dendrogram(
+def create_phylogenetic_tree(
     X,
     orientation="bottom",
     labels=None,
