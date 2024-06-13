@@ -19,7 +19,7 @@ def create_phylogenetic_tree(
     linkagefun=lambda x: sch.linkage(x, "complete"),
     hovertext=None,
     color_threshold=None,
-    tree = ()
+    tree=(),
 ):
     """
     Function that returns a dendrogram Plotly figure object. This is a thin
@@ -101,7 +101,7 @@ def create_phylogenetic_tree(
         linkagefun=linkagefun,
         hovertext=hovertext,
         color_threshold=color_threshold,
-        tree = tree,
+        tree=tree,
     )
 
     return graph_objs.Figure(data=dendrogram.data, layout=dendrogram.layout)
@@ -124,7 +124,7 @@ class _Dendrogram(object):
         linkagefun=lambda x: sch.linkage(x, "complete"),
         hovertext=None,
         color_threshold=None,
-        tree = (),
+        tree=(),
     ):
         self.orientation = orientation
         self.labels = labels
@@ -397,6 +397,8 @@ class _Dendrogram(object):
 
             trace_list.append(trace)
 
+        # Hier überschreiben
+        """
         trace_list = []
 
         for x in tree:
@@ -430,6 +432,6 @@ class _Dendrogram(object):
             trace["yaxis"] = f"y{y_index}"
 
             trace_list.append(trace)
-
+            """
 
         return trace_list, icoord, dcoord, ordered_labels, P["leaves"]
