@@ -5,68 +5,40 @@ from plotly.graph_objs import graph_objs
 
 # Optional imports, may be None for users that only use our core functionality.
 np = optional_imports.get_module("numpy")
-scp = optional_imports.get_module("scipy")
-sch = optional_imports.get_module("scipy.cluster.hierarchy")
-scs = optional_imports.get_module("scipy.spatial")
+Phylo = optional_imports.get_module("Bio.Phylo")
+StringIO = optional_imports.get_module("io.StringIO")
 
 
 def create_phylogenetic_tree(
-    X,
+    newick_str,
     orientation="bottom",
-    labels=None,
     colorscale=None,
-    distfun=None,
-    linkagefun=lambda x: sch.linkage(x, "complete"),
-    hovertext=None,
-    color_threshold=None,
-    tree=(),
 ):
     """
     Function that returns a phylogenetic tree Plotly figure object.
 
-    :param (ndarray) X: Matrix of observations as array of arrays
+    :param (str) newick_str: Newick formatted string. Polytomy is permissible.
     :param (str) orientation: 'top', 'right', 'bottom', or 'left'
-    :param (list) labels: List of axis category labels(observation labels)
-    :param (list) colorscale: Optional colorscale for the dendrogram tree.
+    :param (list) colorscale: Optional colorscale for the phylogenetic tree.
                               Requires 8 colors to be specified, the 7th of
                               which is ignored.  With scipy>=1.5.0, the 2nd, 3rd
                               and 6th are used twice as often as the others.
                               Given a shorter list, the missing values are
                               replaced with defaults and with a longer list the
                               extra values are ignored.
-    :param (function) distfun: Function to compute the pairwise distance from
-                               the observations
-    :param (function) linkagefun: Function to compute the linkage matrix from
-                               the pairwise distances
-    :param (list[list]) hovertext: List of hovertext for constituent traces of dendrogram
-                               clusters
-    :param (double) color_threshold: Value at which the separation of clusters will be made
 
     TODO: Add examples.
     """
-    if not scp or not scs or not sch:
+
+    if not Phylo or not StringIO:
         raise ImportError(
-            "FigureFactory.create_dendrogram requires scipy, \
-                            scipy.spatial and scipy.hierarchy"
+            "Bio.Phylo and io.StringIO are required for create_phylogenetic_tree"
         )
 
-    s = X.shape
-    if len(s) != 2:
-        exceptions.PlotlyError("X should be 2-dimensional array.")
-
-    if distfun is None:
-        distfun = scs.distance.pdist
-
     phylogenetic_tree = _Phylogenetic_Tree(
-        X,
+        newick_str,
         orientation,
-        labels,
         colorscale,
-        distfun=distfun,
-        linkagefun=linkagefun,
-        hovertext=hovertext,
-        color_threshold=color_threshold,
-        tree=tree,
     )
 
     return graph_objs.Figure(
@@ -75,24 +47,23 @@ def create_phylogenetic_tree(
 
 
 class _Phylogenetic_Tree(object):
-    """Refer to FigureFactory.create_dendrogram() for docstring."""
+    """Refer to FigureFactory.create_phylogenetic_tree() for docstring."""
 
     def __init__(
         self,
-        X,
+        newick_str,
         orientation="bottom",
-        labels=None,
         colorscale=None,
         width=np.inf,
         height=np.inf,
         xaxis="xaxis",
         yaxis="yaxis",
-        distfun=None,
-        linkagefun=lambda x: sch.linkage(x, "complete"),
-        hovertext=None,
-        color_threshold=None,
-        tree=(),
     ):
+
+        # Perse the Newick string
+        handle = StringIO(newick_str)
+        tree = Phylo.read(handle, "newick")
+
         self.orientation = orientation
         self.labels = labels
         self.xaxis = xaxis
