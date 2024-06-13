@@ -22,10 +22,7 @@ def create_phylogenetic_tree(
     tree=(),
 ):
     """
-    Function that returns a dendrogram Plotly figure object. This is a thin
-    wrapper around scipy.cluster.hierarchy.dendrogram.
-
-    See also https://dash.plot.ly/dash-bio/clustergram.
+    Function that returns a phylogenetic tree Plotly figure object.
 
     :param (ndarray) X: Matrix of observations as array of arrays
     :param (str) orientation: 'top', 'right', 'bottom', or 'left'
@@ -45,39 +42,7 @@ def create_phylogenetic_tree(
                                clusters
     :param (double) color_threshold: Value at which the separation of clusters will be made
 
-    Example 1: Simple bottom oriented dendrogram
-
-    >>> from plotly.figure_factory import create_dendrogram
-
-    >>> import numpy as np
-
-    >>> X = np.random.rand(10,10)
-    >>> fig = create_dendrogram(X)
-    >>> fig.show()
-
-    Example 2: Dendrogram to put on the left of the heatmap
-
-    >>> from plotly.figure_factory import create_dendrogram
-
-    >>> import numpy as np
-
-    >>> X = np.random.rand(5,5)
-    >>> names = ['Jack', 'Oxana', 'John', 'Chelsea', 'Mark']
-    >>> dendro = create_dendrogram(X, orientation='right', labels=names)
-    >>> dendro.update_layout({'width':700, 'height':500}) # doctest: +SKIP
-    >>> dendro.show()
-
-    Example 3: Dendrogram with Pandas
-
-    >>> from plotly.figure_factory import create_dendrogram
-
-    >>> import numpy as np
-    >>> import pandas as pd
-
-    >>> Index= ['A','B','C','D','E','F','G','H','I','J']
-    >>> df = pd.DataFrame(abs(np.random.randn(10, 10)), index=Index)
-    >>> fig = create_dendrogram(df, labels=Index)
-    >>> fig.show()
+    TODO: Add examples.
     """
     if not scp or not scs or not sch:
         raise ImportError(
@@ -92,7 +57,7 @@ def create_phylogenetic_tree(
     if distfun is None:
         distfun = scs.distance.pdist
 
-    dendrogram = _Dendrogram(
+    phylogenetic_tree = _Phylogenetic_Tree(
         X,
         orientation,
         labels,
@@ -104,10 +69,12 @@ def create_phylogenetic_tree(
         tree=tree,
     )
 
-    return graph_objs.Figure(data=dendrogram.data, layout=dendrogram.layout)
+    return graph_objs.Figure(
+        data=phylogenetic_tree.data, layout=phylogenetic_tree.layout
+    )
 
 
-class _Dendrogram(object):
+class _Phylogenetic_Tree(object):
     """Refer to FigureFactory.create_dendrogram() for docstring."""
 
     def __init__(
@@ -148,7 +115,7 @@ class _Dendrogram(object):
         if distfun is None:
             distfun = scs.distance.pdist
 
-        (dd_traces, xvals, yvals, ordered_labels, leaves) = self.get_dendrogram_traces(
+        (dd_traces, xvals, yvals, ordered_labels, leaves) = self.get_phylo_tree_traces(
             X, colorscale, distfun, linkagefun, hovertext, color_threshold, tree
         )
 
@@ -184,7 +151,7 @@ class _Dendrogram(object):
 
     def get_color_dict(self, colorscale):
         """
-        Returns colorscale used for dendrogram tree clusters.
+        Returns colorscale used for phylogenetic tree clusters.
 
         :param (list) colorscale: Colors to use for the plot in rgb format.
         :rtype (dict): A dict of default colors mapped to the user colorscale.
@@ -314,11 +281,11 @@ class _Dendrogram(object):
 
         return self.layout
 
-    def get_dendrogram_traces(
+    def get_phylo_tree_traces(
         self, X, colorscale, distfun, linkagefun, hovertext, color_threshold, tree
     ):
         """
-        Calculates all the elements needed for plotting a dendrogram.
+        Calculates all the elements needed for plotting a phylogenetic tree.
 
         :param (ndarray) X: Matrix of observations as array of arrays
         :param (list) colorscale: Color scale for dendrogram tree clusters
@@ -398,11 +365,10 @@ class _Dendrogram(object):
             trace_list.append(trace)
 
         # Hier überschreiben
-        """
         trace_list = []
 
         for x in tree:
-            xs = [13+x, 14+x]
+            xs = [13 + x, 14 + x]
             ys = [0, 285]
             color_key = color_list[i]
             hovertext_label = None
@@ -432,6 +398,5 @@ class _Dendrogram(object):
             trace["yaxis"] = f"y{y_index}"
 
             trace_list.append(trace)
-            """
 
         return trace_list, icoord, dcoord, ordered_labels, P["leaves"]
