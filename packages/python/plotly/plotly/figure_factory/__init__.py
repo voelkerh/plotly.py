@@ -18,6 +18,7 @@ from plotly.figure_factory._distplot import create_distplot
 from plotly.figure_factory._facet_grid import create_facet_grid
 from plotly.figure_factory._gantt import create_gantt
 from plotly.figure_factory._ohlc import create_ohlc
+from plotly.figure_factory._phylogenetic_tree import create_phylogenetic_tree
 from plotly.figure_factory._quiver import create_quiver
 from plotly.figure_factory._scatterplot import create_scatterplotmatrix
 from plotly.figure_factory._streamline import create_streamline
@@ -57,6 +58,7 @@ __all__ = [
     "create_gantt",
     "create_hexbin_mapbox",
     "create_ohlc",
+    "create_phylogenetic_tree",
     "create_quiver",
     "create_scatterplotmatrix",
     "create_streamline",
