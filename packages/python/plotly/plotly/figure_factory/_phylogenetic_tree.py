@@ -60,12 +60,8 @@ class _Phylogenetic_Tree(object):
         yaxis="yaxis",
     ):
 
-        # Perse the Newick string
-        handle = StringIO(newick_str)
-        tree = Phylo.read(handle, "newick")
-
         self.orientation = orientation
-        self.labels = labels
+        self.labels = None
         self.xaxis = xaxis
         self.yaxis = yaxis
         self.data = []
@@ -83,11 +79,12 @@ class _Phylogenetic_Tree(object):
         else:
             self.sign[self.yaxis] = -1
 
-        if distfun is None:
-            distfun = scs.distance.pdist
+        # Parse the Newick string
+        handle = StringIO(newick_str)
+        tree = Phylo.read(handle, "newick")
 
         (dd_traces, xvals, yvals, ordered_labels, leaves) = self.get_phylo_tree_traces(
-            X, colorscale, distfun, linkagefun, hovertext, color_threshold, tree
+            tree, colorscale
         )
 
         self.labels = ordered_labels
@@ -252,9 +249,7 @@ class _Phylogenetic_Tree(object):
 
         return self.layout
 
-    def get_phylo_tree_traces(
-        self, X, colorscale, distfun, linkagefun, hovertext, color_threshold, tree
-    ):
+    def get_phylo_tree_traces(self, tree, colorscale):
         """
         Calculates all the elements needed for plotting a phylogenetic tree.
 
