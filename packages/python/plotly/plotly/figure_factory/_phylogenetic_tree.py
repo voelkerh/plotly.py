@@ -3,6 +3,10 @@ from collections import OrderedDict
 from plotly import exceptions, optional_imports
 from plotly.graph_objs import graph_objs
 
+# Zwischenbehelf, um die Funktionen von Bio.Phylo und io.StringIO zu importieren
+from Bio import Phylo
+from io import StringIO
+
 # Optional imports, may be None for users that only use our core functionality.
 np = optional_imports.get_module("numpy")
 Phylo = optional_imports.get_module("Bio.Phylo")
@@ -11,7 +15,7 @@ StringIO = optional_imports.get_module("io.StringIO")
 
 def create_phylogenetic_tree(
     newick_str,
-    orientation="bottom",
+    orientation="right",
     colorscale=None,
 ):
     """
@@ -29,12 +33,12 @@ def create_phylogenetic_tree(
 
     TODO: Add examples.
     """
-
+    """
     if not Phylo or not StringIO:
         raise ImportError(
             "Bio.Phylo and io.StringIO are required for create_phylogenetic_tree"
         )
-
+    """
     phylogenetic_tree = _Phylogenetic_Tree(
         newick_str,
         orientation,
@@ -231,7 +235,7 @@ class _Phylogenetic_Tree(object):
 
     def set_figure_layout(self, width, height):
         """
-        Sets and returns default layout object for dendrogram figure.
+        Sets and returns default layout object for phylogenetic tree figure.
 
         """
         self.layout.update(
@@ -253,13 +257,8 @@ class _Phylogenetic_Tree(object):
         """
         Calculates all the elements needed for plotting a phylogenetic tree.
 
-        :param (ndarray) X: Matrix of observations as array of arrays
+        :param (Bio.Phylo.BaseTree.Tree) tree: A Biopython Tree object parsed from a Newick formatted string.
         :param (list) colorscale: Color scale for dendrogram tree clusters
-        :param (function) distfun: Function to compute the pairwise distance
-                                   from the observations
-        :param (function) linkagefun: Function to compute the linkage matrix
-                                      from the pairwise distances
-        :param (list) hovertext: List of hovertext for constituent traces of dendrogram
         :rtype (tuple): Contains all the traces in the following order:
             (a) trace_list: List of Plotly trace objects for dendrogram tree
             (b) icoord: All X points of the dendrogram tree as array of arrays
@@ -271,24 +270,11 @@ class _Phylogenetic_Tree(object):
             (e) P['leaves']: left-to-right traversal of the leaves
 
         """
-        d = distfun(X)
-        Z = linkagefun(d)
-        P = sch.dendrogram(
-            Z,
-            orientation=self.orientation,
-            labels=self.labels,
-            no_plot=True,
-            color_threshold=color_threshold,
-        )
-
-        icoord = np.array(P["icoord"])
-        dcoord = np.array(P["dcoord"])
-        ordered_labels = np.array(P["ivl"])
-        color_list = np.array(P["color_list"])
-        colors = self.get_color_dict(colorscale)
 
         trace_list = []
+        colors = self.get_color_dict(colorscale)
 
+        """
         for i in range(len(icoord)):
             # xs and ys are arrays of 4 points that make up the '∩' shapes
             # of the dendrogram tree
@@ -302,9 +288,7 @@ class _Phylogenetic_Tree(object):
             else:
                 ys = icoord[i]
             color_key = color_list[i]
-            hovertext_label = None
-            if hovertext:
-                hovertext_label = hovertext[i]
+
             trace = dict(
                 type="scatter",
                 x=np.multiply(self.sign[self.xaxis], xs),
@@ -327,19 +311,38 @@ class _Phylogenetic_Tree(object):
 
             trace["xaxis"] = f"x{x_index}"
             trace["yaxis"] = f"y{y_index}"
+        """
+        # Traverse tree and collect coordinates for traces
+        for clade in tree.find_clades(order="level"):
+            if clade.is_terminal():
+                self.leaves.append(clade.name)
 
+            for subclade in clade.clades:
+                xs = [
+                    clade.branch_length if clade.branch_length else 0,
+                    subclade.branch_length if subclade.branch_length else 0,
+                ]
+                ys = [
+                    clade.name if clade.name else "",
+                    subclade.name if subclade.name else "",
+                ]
+                trace = dict(
+                    type="scatter",
+                    x=xs if self.orientation in ["top", "bottom"] else ys,
+                    y=ys if self.orientation in ["top", "bottom"] else xs,
+                    mode="lines",
+                    line=dict(color="black"),
+                )
             trace_list.append(trace)
 
         # Hier überschreiben
+        """
         trace_list = []
 
         for x in tree:
             xs = [13 + x, 14 + x]
             ys = [0, 285]
             color_key = color_list[i]
-            hovertext_label = None
-            if hovertext:
-                hovertext_label = hovertext[i]
             trace = dict(
                 type="scatter",
                 x=np.multiply(self.sign[self.xaxis], xs),
@@ -364,5 +367,5 @@ class _Phylogenetic_Tree(object):
             trace["yaxis"] = f"y{y_index}"
 
             trace_list.append(trace)
-
-        return trace_list, icoord, dcoord, ordered_labels, P["leaves"]
+        """
+        return trace_list, self.leaves
