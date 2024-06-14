@@ -99,7 +99,7 @@ class _Phylogenetic_Tree(object):
             "ticks": "outside",
             "mirror": "allticks",
             "rangemode": "tozero",
-            "showticklabels": True,
+            "showticklabels": False,
             "zeroline": False,
             "showgrid": False,
             "showline": True,
@@ -216,6 +216,20 @@ class _Phylogenetic_Tree(object):
             node_name = get_node_name(clade)
             children = clade.clades
 
+            # Add a scatter trace for the node itself to display its name
+            x_node = x_positions[node_name]
+            y_node = y_positions[node_name]
+            trace_node = dict(
+                type="scatter",
+                x=[x_node],
+                y=[y_node],
+                mode="markers+text",
+                text=[node_name if "internal" not in node_name else ""],
+                textposition="middle right",
+                marker=dict(color="black", size=1),
+            )
+            trace_list.append(trace_node)
+
             for child in children:
                 child_name = get_node_name(child)
                 x0 = x_positions[node_name]
@@ -230,6 +244,7 @@ class _Phylogenetic_Tree(object):
                     mode="lines",
                     line=dict(color="black"),
                 )
+
                 trace2 = dict(
                     type="scatter",
                     x=[x0, x1] if self.orientation in ["left", "right"] else [y0, y1],
@@ -240,5 +255,5 @@ class _Phylogenetic_Tree(object):
 
                 trace_list.append(trace1)
                 trace_list.append(trace2)
-        print(x_positions)
+
         return trace_list, ordered_labels, self.leaves
