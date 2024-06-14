@@ -9,8 +9,8 @@ from io import StringIO
 
 # Optional imports, may be None for users that only use our core functionality.
 np = optional_imports.get_module("numpy")
-Phylo = optional_imports.get_module("Bio.Phylo")
-StringIO = optional_imports.get_module("io.StringIO")
+# Phylo = optional_imports.get_module("Bio.Phylo")
+# StringIO = optional_imports.get_module("io.StringIO")
 
 
 def create_phylogenetic_tree(
@@ -33,12 +33,12 @@ def create_phylogenetic_tree(
 
     TODO: Add examples.
     """
-    """
+
     if not Phylo or not StringIO:
         raise ImportError(
             "Bio.Phylo and io.StringIO are required for create_phylogenetic_tree"
         )
-    """
+
     phylogenetic_tree = _Phylogenetic_Tree(
         newick_str,
         orientation,
@@ -56,7 +56,7 @@ class _Phylogenetic_Tree(object):
     def __init__(
         self,
         newick_str,
-        orientation="bottom",
+        orientation="right",
         colorscale=None,
         width=np.inf,
         height=np.inf,
@@ -258,65 +258,62 @@ class _Phylogenetic_Tree(object):
         Calculates all the elements needed for plotting a phylogenetic tree.
 
         :param (Bio.Phylo.BaseTree.Tree) tree: A Biopython Tree object parsed from a Newick formatted string.
-        :param (list) colorscale: Color scale for dendrogram tree clusters
+        :param (list) colorscale: Color scale for phylogenetic tree clusters
         :rtype (tuple): Contains all the traces in the following order:
-            (a) trace_list: List of Plotly trace objects for dendrogram tree
-            (b) icoord: All X points of the dendrogram tree as array of arrays
+            (a) trace_list: List of Plotly trace objects for phylogenetic tree
+            (b) icoord: All X points of the phylogenetic tree as array of arrays
                 with length 4
-            (c) dcoord: All Y points of the dendrogram tree as array of arrays
+            (c) dcoord: All Y points of the phylogenetic tree as array of arrays
                 with length 4
             (d) ordered_labels: leaf labels in the order they are going to
                 appear on the plot
-            (e) P['leaves']: left-to-right traversal of the leaves
+            TODO: ?? (e) P['leaves']: left-to-right traversal of the leaves
 
         """
 
         trace_list = []
         colors = self.get_color_dict(colorscale)
+        xvals = np.array([])
+        yvals = np.array([])
+        ordered_labels = []
 
-        """
-        for i in range(len(icoord)):
-            # xs and ys are arrays of 4 points that make up the '∩' shapes
-            # of the dendrogram tree
-            if self.orientation in ["top", "bottom"]:
-                xs = icoord[i]
-            else:
-                xs = dcoord[i]
-
-            if self.orientation in ["top", "bottom"]:
-                ys = dcoord[i]
-            else:
-                ys = icoord[i]
-            color_key = color_list[i]
-
-            trace = dict(
-                type="scatter",
-                x=np.multiply(self.sign[self.xaxis], xs),
-                y=np.multiply(self.sign[self.yaxis], ys),
-                mode="lines",
-                marker=dict(color=colors[color_key]),
-                text=hovertext_label,
-                hoverinfo="text",
-            )
-
-            try:
-                x_index = int(self.xaxis[-1])
-            except ValueError:
-                x_index = ""
-
-            try:
-                y_index = int(self.yaxis[-1])
-            except ValueError:
-                y_index = ""
-
-            trace["xaxis"] = f"x{x_index}"
-            trace["yaxis"] = f"y{y_index}"
-        """
-        # Traverse tree and collect coordinates for traces
+        # Traverse tree in level order and collect coordinates for traces
         for clade in tree.find_clades(order="level"):
             if clade.is_terminal():
                 self.leaves.append(clade.name)
+                ordered_labels.append(clade.name)
 
+        for clade in tree.find_clades(order="level"):
+            for subclade in clade.clades:
+                x0 = clade.branch_length if clade.branch_length else 0
+                x1 = x0 + (subclade.branch_length if subclade.branch_length else 0)
+                y = (
+                    len(self.leaves) - self.leaves.index(clade.name)
+                    if clade.name
+                    else 0
+                )
+                y_sub = (
+                    len(self.leaves) - self.leaves.index(subclade.name)
+                    if subclade.name
+                    else 0
+                )
+
+                trace = dict(
+                    type="scatter",
+                    x=[x0, x1] if self.orientation in ["top", "bottom"] else [y, y_sub],
+                    y=[y, y_sub] if self.orientation in ["top", "bottom"] else [x0, x1],
+                    mode="lines",
+                    line=dict(color="black"),
+                )
+                trace_list.append(trace)
+                xvals = np.append(xvals, [x0, x1])
+                yvals = np.append(yvals, [y, y_sub])
+
+        return trace_list, xvals, yvals, ordered_labels, self.leaves
+
+
+"""
+            # xs and ys are arrays of 4 points that make up the fork shapes
             for subclade in clade.clades:
                 xs = [
                     clade.branch_length if clade.branch_length else 0,
@@ -331,41 +328,7 @@ class _Phylogenetic_Tree(object):
                     x=xs if self.orientation in ["top", "bottom"] else ys,
                     y=ys if self.orientation in ["top", "bottom"] else xs,
                     mode="lines",
-                    line=dict(color="black"),
+                    line=dict(color="black"), # TODO: use color dictionary here?
                 )
             trace_list.append(trace)
-
-        # Hier überschreiben
-        """
-        trace_list = []
-
-        for x in tree:
-            xs = [13 + x, 14 + x]
-            ys = [0, 285]
-            color_key = color_list[i]
-            trace = dict(
-                type="scatter",
-                x=np.multiply(self.sign[self.xaxis], xs),
-                y=np.multiply(self.sign[self.yaxis], ys),
-                mode="lines",
-                marker=dict(color=colors[color_key]),
-                text=hovertext_label,
-                hoverinfo="text",
-            )
-
-            try:
-                x_index = int(self.xaxis[-1])
-            except ValueError:
-                x_index = ""
-
-            try:
-                y_index = int(self.yaxis[-1])
-            except ValueError:
-                y_index = ""
-
-            trace["xaxis"] = f"x{x_index}"
-            trace["yaxis"] = f"y{y_index}"
-
-            trace_list.append(trace)
-        """
-        return trace_list, self.leaves
+"""
