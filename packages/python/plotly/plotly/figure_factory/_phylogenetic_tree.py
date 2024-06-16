@@ -135,10 +135,8 @@ class _Phylogenetic_Tree(object):
         self.layout.update(
             {
                 "showlegend": False,
-                "autosize": False,
+                "autosize": True,
                 "hovermode": "closest",
-                "width": width,
-                "height": height,
             }
         )
 
