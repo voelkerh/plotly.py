@@ -220,12 +220,15 @@ class _Phylogenetic_Tree(object):
             # Add a scatter trace for the node itself to display its name
             x_node = x_positions[node_name]
             y_node = y_positions[node_name]
+            is_leaf = clade.is_terminal()
             trace_node = dict(
                 type="scatter",
                 x=[x_node],
                 y=[y_node],
                 mode="markers+text",
-                text=[node_name if "internal" not in node_name else ""],
+                text=[node_name] if is_leaf else [],
+                hoverinfo="text",
+                hovertext=[node_name] if not is_leaf else [],
                 textposition="middle right",
                 marker=dict(color="black", size=1),
             )
