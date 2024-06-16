@@ -74,6 +74,7 @@ class _Phylogenetic_Tree(object):
             self.sign[self.yaxis] = -1
 
         # Parse the Newick string
+        newick_str = newick_str.replace(" ", "_")
         handle = StringIO(newick_str)
         tree = Phylo.read(handle, "newick")
 
