@@ -97,13 +97,13 @@ class _Phylogenetic_Tree(object):
         """
         axis_defaults = {
             "type": "linear",
-            "ticks": "outside",
+            "ticks": "",
             "mirror": "allticks",
             "rangemode": "tozero",
             "showticklabels": False,
             "zeroline": False,
             "showgrid": False,
-            "showline": True,
+            "showline": False,
         }
 
         if len(self.labels) != 0:
@@ -121,7 +121,7 @@ class _Phylogenetic_Tree(object):
 
         # Set range to invert the y-axis
         if axis_key_labels == self.yaxis:
-            self.layout[axis_key_labels]["range"] = [len(self.labels), 0]
+            self.layout[axis_key_labels]["range"] = [len(self.labels) + 1, -1]
 
         self.layout[axis_key].update(axis_defaults)
 
