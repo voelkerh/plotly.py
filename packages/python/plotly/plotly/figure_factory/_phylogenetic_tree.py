@@ -84,12 +84,30 @@ class _Phylogenetic_Tree(object):
         self.leaves = leaves
         self.zero_vals = list(range(len(self.leaves)))
 
-        self.layout = self.set_figure_layout(width, height)
+        self.layout = self.set_figure_layout()
         self.data = dd_traces
+
+    def set_figure_layout(self):
+        """
+        Sets and returns default layout object for phylogenetic tree figure.
+
+        """
+        self.layout.update(
+            {
+                "showlegend": False,
+                "autosize": True,
+                "hovermode": "closest",
+            }
+        )
+
+        self.set_axis_layout(self.xaxis)
+        self.set_axis_layout(self.yaxis)
+
+        return self.layout
 
     def set_axis_layout(self, axis_key):
         """
-        Sets and returns default axis object for dendrogram figure.
+        Sets and returns default axis object for phylogenetic tree figure.
 
         :param (str) axis_key: E.g., 'xaxis', 'xaxis1', 'yaxis', yaxis1', etc.
         :rtype (dict): An axis_key dictionary with set parameters.
@@ -126,24 +144,6 @@ class _Phylogenetic_Tree(object):
         self.layout[axis_key].update(axis_defaults)
 
         return self.layout[axis_key]
-
-    def set_figure_layout(self, width, height):
-        """
-        Sets and returns default layout object for phylogenetic tree figure.
-
-        """
-        self.layout.update(
-            {
-                "showlegend": False,
-                "autosize": True,
-                "hovermode": "closest",
-            }
-        )
-
-        self.set_axis_layout(self.xaxis)
-        self.set_axis_layout(self.yaxis)
-
-        return self.layout
 
     def get_phylo_tree_traces(self, tree):
         """
