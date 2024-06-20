@@ -168,6 +168,7 @@ class _Phylogenetic_Tree(object):
         y_positions = {}
         node_counter = 0
 
+        # Helper function to get node name or name unnamed internal nodes
         def get_node_name(clade):
             nonlocal node_counter
             if clade.name:
@@ -193,7 +194,7 @@ class _Phylogenetic_Tree(object):
         for clade in tree.find_clades(order="level"):
             get_node_name(clade)
 
-        # Traverse tree to collect y-positions for all internal nodes
+        # Traverse tree to collect x- and y-positions for all internal nodes
         for clade in tree.find_clades(order="postorder"):
             node_name = get_node_name(clade)
             children = clade.clades
@@ -210,7 +211,7 @@ class _Phylogenetic_Tree(object):
         root_clade = tree.root
         x_positions[get_node_name(root_clade)] = 0
 
-        # Traverse tree in level order and collect coordinates for traces
+        # Traverse tree in level order to produce traces
         for clade in tree.find_clades(order="level"):
             node_name = get_node_name(clade)
             children = clade.clades
