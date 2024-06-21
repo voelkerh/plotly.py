@@ -4,8 +4,6 @@ from plotly import exceptions, optional_imports
 from plotly.graph_objs import graph_objs
 
 # Zwischenbehelf, um die Funktionen von Bio.Phylo und io.StringIO zu importieren
-from Bio import Phylo
-from io import StringIO
 
 # Optional imports, may be None for users that only use our core functionality.
 np = optional_imports.get_module("numpy")
@@ -26,10 +24,10 @@ def create_phylogenetic_tree(
     TODO: Add examples.
     """
 
-    if not Phylo or not StringIO:
+    """if not Phylo or not StringIO:
         raise ImportError(
             "Bio.Phylo and io.StringIO are required for create_phylogenetic_tree"
-        )
+        )"""
 
     phylogenetic_tree = _Phylogenetic_Tree(
         newick_str,
@@ -53,6 +51,8 @@ class _Phylogenetic_Tree(object):
         xaxis="xaxis",
         yaxis="yaxis",
     ):
+        from Bio import Phylo
+        from io import StringIO
 
         self.orientation = orientation
         self.labels = None
