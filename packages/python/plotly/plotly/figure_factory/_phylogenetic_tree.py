@@ -3,35 +3,26 @@ from collections import OrderedDict
 from plotly import exceptions, optional_imports
 from plotly.graph_objs import graph_objs
 
-# Zwischenbehelf, um die Funktionen von Bio.Phylo und io.StringIO zu importieren
-
 # Optional imports, may be None for users that only use our core functionality.
 np = optional_imports.get_module("numpy")
-# Phylo = optional_imports.get_module("Bio.Phylo")
-# StringIO = optional_imports.get_module("io.StringIO")
 
 
 def create_phylogenetic_tree(
     newick_str,
-    orientation="right",
+    display_level=np.inf,
 ):
     """
     Function that returns a phylogenetic tree Plotly figure object.
 
     :param (str) newick_str: Newick formatted string. Polytomy is permissible.
-    :param (str) orientation: 'top', 'right', 'bottom', or 'left'
+    :param (int) display_level: The maximum level of the tree to display. The root is at level 0.
 
     TODO: Add examples.
     """
 
-    """if not Phylo or not StringIO:
-        raise ImportError(
-            "Bio.Phylo and io.StringIO are required for create_phylogenetic_tree"
-        )"""
-
     phylogenetic_tree = _Phylogenetic_Tree(
         newick_str,
-        orientation,
+        display_level,
     )
 
     return graph_objs.Figure(
@@ -45,7 +36,7 @@ class _Phylogenetic_Tree(object):
     def __init__(
         self,
         newick_str,
-        orientation="right",
+        display_level=np.inf,
         width=np.inf,
         height=np.inf,
         xaxis="xaxis",
@@ -54,7 +45,6 @@ class _Phylogenetic_Tree(object):
         from Bio import Phylo
         from io import StringIO
 
-        self.orientation = orientation
         self.labels = None
         self.xaxis = xaxis
         self.yaxis = yaxis
@@ -62,23 +52,19 @@ class _Phylogenetic_Tree(object):
         self.leaves = []
         self.sign = {self.xaxis: 1, self.yaxis: 1}
         self.layout = {self.xaxis: {}, self.yaxis: {}}
+        self.display_level = display_level
 
-        if self.orientation in ["left", "bottom"]:
-            self.sign[self.xaxis] = 1
-        else:
-            self.sign[self.xaxis] = -1
-
-        if self.orientation in ["right", "bottom"]:
-            self.sign[self.yaxis] = 1
-        else:
-            self.sign[self.yaxis] = -1
+        self.sign[self.xaxis] = -1
+        self.sign[self.yaxis] = 1
 
         # Parse the Newick string
         newick_str = newick_str.replace(" ", "_")
         handle = StringIO(newick_str)
         tree = Phylo.read(handle, "newick")
 
-        (dd_traces, ordered_labels, leaves) = self.get_phylo_tree_traces(tree)
+        (dd_traces, ordered_labels, leaves) = self.get_phylo_tree_traces(
+            tree, display_level
+        )
 
         self.labels = ordered_labels
         self.leaves = leaves
@@ -126,8 +112,7 @@ class _Phylogenetic_Tree(object):
 
         if len(self.labels) != 0:
             axis_key_labels = self.xaxis
-            if self.orientation in ["left", "right"]:
-                axis_key_labels = self.yaxis
+            axis_key_labels = self.yaxis
             if axis_key_labels not in self.layout:
                 self.layout[axis_key_labels] = {}
             self.layout[axis_key_labels]["tickvals"] = [
@@ -145,7 +130,7 @@ class _Phylogenetic_Tree(object):
 
         return self.layout[axis_key]
 
-    def get_phylo_tree_traces(self, tree):
+    def get_phylo_tree_traces(self, tree, display_level):
         """
         Calculates all the elements needed for plotting a phylogenetic tree.
 
@@ -178,6 +163,44 @@ class _Phylogenetic_Tree(object):
                 clade.name = f"internal_{node_counter}"
                 return clade.name
 
+        # Set root node position and name
+        for clade in tree.find_clades(order="level"):
+            if clade.name == "root":
+                tree.root = clade
+                break
+
+        root_clade = tree.root
+        if not root_clade.name:
+            root_clade.name = "root"
+        x_positions[get_node_name(root_clade)] = 0
+
+        # Cut out unclassified clade if exists
+        unclassified = None
+        for clade in tree.root.clades:
+            if clade.name == "unclassified":
+                unclassified = clade
+                tree.root.clades.remove(unclassified)
+                tree.root.clades.extend(unclassified.clades)
+                unclassified.clades = []
+                break
+
+        # Trim tree to display level
+        def trim_tree_to_display_level(tree, display_level):
+            if display_level == np.inf:
+                return tree
+
+            def trim_clade(clade, current_level):
+                if current_level >= display_level:
+                    clade.clades = []
+                else:
+                    for child in clade.clades:
+                        trim_clade(child, current_level + 1)
+
+            trim_clade(tree.root, 0)
+            return tree
+
+        tree = trim_tree_to_display_level(tree, display_level)
+
         # Collect all terminal nodes (leaves) and their y-positions
         terminals = tree.get_terminals()
         for idx, terminal in enumerate(terminals):
@@ -207,9 +230,6 @@ class _Phylogenetic_Tree(object):
                 clade.branch_length if clade.branch_length else 1
                 for clade in tree.get_path(clade)
             )
-
-        root_clade = tree.root
-        x_positions[get_node_name(root_clade)] = 0
 
         # Traverse tree in level order to produce traces
         for clade in tree.find_clades(order="level"):
@@ -242,21 +262,41 @@ class _Phylogenetic_Tree(object):
 
                 trace1 = dict(
                     type="scatter",
-                    x=[x0, x0] if self.orientation in ["left", "right"] else [y0, y0],
-                    y=[y0, y1] if self.orientation in ["left", "right"] else [x0, x1],
+                    x=[x0, x0],
+                    y=[y0, y1],
                     mode="lines",
                     line=dict(color="black"),
                 )
 
                 trace2 = dict(
                     type="scatter",
-                    x=[x0, x1] if self.orientation in ["left", "right"] else [y0, y1],
-                    y=[y1, y1] if self.orientation in ["left", "right"] else [x1, x1],
+                    x=[x0, x1],
+                    y=[y1, y1],
                     mode="lines",
                     line=dict(color="black"),
                 )
 
                 trace_list.append(trace1)
                 trace_list.append(trace2)
+
+        # Insert Trace for unclassified clade if exists
+        if unclassified:
+            unclassified_name = get_node_name(unclassified)
+            x_positions[unclassified_name] = 0
+            y_positions[unclassified_name] = y_positions[root_clade.name] - 1
+            trace_unclassified = dict(
+                type="scatter",
+                x=[x_positions[unclassified_name]],
+                y=[y_positions[unclassified_name]],
+                mode="markers+text",
+                text=[unclassified_name],
+                textposition="middle right",
+                hoverinfo="text",
+                hovertext=[unclassified_name],
+                marker=dict(color="black", size=1),
+            )
+            trace_list.append(trace_unclassified)
+            ordered_labels.append(unclassified_name)
+            self.leaves.append(unclassified_name)
 
         return trace_list, ordered_labels, self.leaves
