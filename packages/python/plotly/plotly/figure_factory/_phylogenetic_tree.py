@@ -59,6 +59,8 @@ class _Phylogenetic_Tree(object):
 
         self.min_x = float("inf")
         self.max_x = float("-inf")
+        self.min_y = float("inf")
+        self.max_y = float("-inf")
 
         # Parse the Newick string
         newick_str = newick_str.replace(" ", "_")
@@ -95,6 +97,10 @@ class _Phylogenetic_Tree(object):
         total_width = self.max_x - self.min_x
         buffer = total_width * 0.5
         self.layout[self.xaxis].update(range=[self.min_x, self.max_x + buffer])
+
+        total_height = self.max_y - self.min_y
+        buffer = total_height * 0.05
+        self.layout[self.yaxis].update(range=[self.max_y + buffer, self.min_y - buffer])
 
         return self.layout
 
@@ -245,10 +251,14 @@ class _Phylogenetic_Tree(object):
             x_node = x_positions[node_name]
             self.min_x = min(self.min_x, x_node)
             self.max_x = max(self.max_x, x_node)
+            y_node = y_positions[node_name]
+            self.min_y = min(self.min_y, y_node)
+            self.max_y = max(self.max_y, y_node)
+
             children = clade.clades
 
             # Add a scatter trace for the node itself to display its name
-            y_node = y_positions[node_name]
+
             is_leaf = clade.is_terminal()
             trace_node = dict(
                 type="scatter",
