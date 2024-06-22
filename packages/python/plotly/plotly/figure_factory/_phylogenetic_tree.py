@@ -108,6 +108,7 @@ class _Phylogenetic_Tree(object):
             "zeroline": False,
             "showgrid": False,
             "showline": False,
+            "automargin": True,
         }
 
         if len(self.labels) != 0:
